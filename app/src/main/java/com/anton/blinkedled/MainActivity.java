@@ -14,13 +14,18 @@ import com.google.android.things.pio.PeripheralManagerService;
 
 import java.io.IOException;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int INTERVAL_BETWEEN_BLINKS_MS = 300;
+    private static final int INTERVAL_BETWEEN_BLINKS_MS = 500;
     private static final String GPIO_PIN_NAME = "BCM13"; // Physical Pin #33 on Raspberry Pi3
+    //Relay Card
+    private static final String GPIO_PIN_NAME_RC = "BCM17"; // Physical Pin #11
     private Handler mHandler = new Handler();
-    private Gpio mLedGpio;
+    private Gpio mLedGpio, mRelayCardGpio;
 
     Button start_btn, stop_btn;
 
@@ -36,12 +41,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Step 1. Create GPIO connection.
         PeripheralManagerService service = new PeripheralManagerService();
         try {
+            //LED
             mLedGpio = service.openGpio(GPIO_PIN_NAME);
-            // Step 2. Configure as an output.
             mLedGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
-
-            // Step 4. Repeat using a handler.
-            //mHandler.post(mBlinkRunnable);
+            //Relay Card
+            mRelayCardGpio = service.openGpio(GPIO_PIN_NAME_RC);
+            mRelayCardGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
         } catch (IOException e) {
             Log.e(TAG, "Error on PeripheralIO API", e);
         }
@@ -56,12 +61,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.button_start:
                 Toast.makeText(getApplicationContext(), "Start Button", Toast.LENGTH_LONG).show();
                 mHandler.post(mBlinkRunnable);
+                mHandler.post(mRelayCardRunnable);
                 break;
             case R.id.button_stop:
                 Toast.makeText(getApplicationContext(), "Stop Button", Toast.LENGTH_LONG).show();
                 mHandler.removeCallbacks(mBlinkRunnable);
+                mHandler.removeCallbacks(mRelayCardRunnable);
+
+                if(FALSE) {
+                    //CLOSE GPIO NEED CREATE AGAIN !!!
+                    if (mRelayCardGpio != null) {
+                        try {
+                            mRelayCardGpio.close();
+                        } catch (IOException e) {
+                            Log.e(TAG, "Error on PeripheralIO API", e);
+                        }
+                    }
+                    //TO DO DOESN'T RESET VALUE
+                    try {
+                        Log.e(TAG, "MY POINT RC = " + Boolean.toString(mRelayCardGpio.getValue()));
+                        mRelayCardGpio.setValue(FALSE);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error on PeripheralIO API", e);
+                    }
+                    try {
+                        Log.e(TAG, "MY POINT LED =" + Boolean.toString(mLedGpio.getValue()));
+                        mLedGpio.setValue(FALSE);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error on PeripheralIO API", e);
+                    }
+
+                }
+
                 break;
         }
+
     }
     @Override
     protected void onDestroy() {
@@ -77,16 +111,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e(TAG, "Error on PeripheralIO API", e);
             }
         }
+        if (mRelayCardGpio != null) {
+            try {
+                mRelayCardGpio.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Error on PeripheralIO API", e);
+            }
+        }
     }
 
+    private Runnable mRelayCardRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mRelayCardGpio == null)
+                return;
+
+            try {
+                // Step 3. Toggle the Relay Card state
+                mRelayCardGpio.setValue(!mRelayCardGpio.getValue());
+
+                // Step 4. Schedule another event after delay.
+                mHandler.postDelayed(mRelayCardRunnable, INTERVAL_BETWEEN_BLINKS_MS);
+            } catch (IOException e) {
+                Log.e(TAG, "Error on PeripheralIO API", e);
+            }
+        }
+    };
 
     private Runnable mBlinkRunnable = new Runnable() {
         @Override
         public void run() {
             // Exit if the GPIO is already closed
-            if (mLedGpio == null) {
+            if (mLedGpio == null)
                 return;
-            }
 
             try {
                 // Step 3. Toggle the LED state
