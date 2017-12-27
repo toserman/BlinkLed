@@ -22,14 +22,33 @@
         android:layout_height="match_parent"
         android:layout_marginTop="98dp"
         tools:layout_height="wrap_content"
-        android:layout_below="@+id/textView2"
-        android:layout_alignParentEnd="true">
+        android:layout_alignParentEnd="true"
+        android:id="@+id/linearLayout">
 
         <Button
-            android:text="START"
+            android:id="@+id/button_on"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/button_start" />
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/linearLayout"
+            android:layout_marginStart="9dp"
+            android:layout_marginTop="36dp"
+            android:text="ON" />
+
+        <Button
+            android:id="@+id/button_off"
+            android:layout_width="314dp"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@+id/toggleButton"
+            android:layout_alignTop="@+id/button_on"
+            android:layout_marginEnd="49dp"
+            android:text="OFF" />
+
+        <Button
+            android:id="@+id/button_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="START" />
 
         <Button
             android:text="STOP"
@@ -38,4 +57,5 @@
             android:id="@+id/button_stop" />
 
     </LinearLayout>
+
 </RelativeLayout>
